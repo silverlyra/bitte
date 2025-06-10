@@ -1,0 +1,26 @@
+[package]
+name = "bitte"
+version = "0.0.1"
+edition = "2024"
+description = "Automatically desugar and set Send/Sync bounds on async traits"
+license = "MIT"
+repository = "https://github.com/silverlyra/bitte"
+keywords = ["async", "trait", "macro", "procedural"]
+categories = ["rust-patterns", "development-tools::procedural-macro-helpers"]
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1.0"
+quote = "1.0"
+syn = { version = "2.0", features = ["full", "extra-traits"] }
+
+[features]
+default = []
+threads = []
+
+[dev-dependencies]
+trybuild = "1.0"
+tokio = { version = "1.0", features = ["full"] }
+rand = "0.8"
