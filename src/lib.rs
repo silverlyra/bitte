@@ -2,10 +2,11 @@ use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::quote;
 use syn::{
-    Attribute, Ident, ItemFn, ItemImpl, ItemTrait, Meta, ReturnType, Signature, Token, TraitItem,
-    TraitItemFn, Type, TypeImplTrait, TypeParamBound, WherePredicate, ImplItem, ImplItemFn,
+    Attribute, FnArg, GenericArgument, Ident, ImplItem, ImplItemFn, ItemFn, ItemImpl, ItemTrait,
+    Meta, PathArguments, ReturnType, Signature, Token, TraitItem, TraitItemFn, Type, TypeImplTrait,
+    TypeParamBound, WherePredicate,
     parse::{Parse, ParseStream},
-    parse_quote, FnArg, PathArguments, GenericArgument,
+    parse_quote,
 };
 
 /// Whether to bound an `async fn` or its receiver by [`Send`] or [`Sync`].
@@ -207,17 +208,17 @@ impl DesugarAsync for ImplItemFn {
         if self.sig.asyncness.is_some() {
             // Store the original body
             let body = &self.block;
-            
+
             // Transform the signature
             self.sig.desugar_async(config);
-            
+
             // Wrap the body in an async block
             self.block = parse_quote! {
                 {
                     async move #body
                 }
             };
-            
+
             // Add #[must_use] attribute to async methods
             self.attrs.push(parse_quote! { #[must_use] });
             // Add lint suppression
@@ -267,7 +268,7 @@ impl DesugarAsync for TraitItemFn {
                 }
             };
             self.attrs.push(lint_attr);
-            
+
             // Transform default method body if present
             if let Some(block) = &mut self.default {
                 let transformed = quote! {
@@ -296,14 +297,13 @@ impl DesugarAsync for Signature {
         // Build the Future bounds
         let mut bounds: Vec<TypeParamBound> =
             vec![parse_quote! { std::future::Future<Output = #output_type> }];
-        
+
         // Check receiver type to determine bounds
         let receiver_bounds = analyze_receiver(&self.inputs);
-        
+
         if config.send || receiver_bounds.needs_send {
             bounds.push(parse_quote! { Send });
         }
-
 
         // Create the new return type
         let impl_trait = TypeImplTrait {
@@ -368,7 +368,7 @@ fn analyze_receiver(inputs: &syn::punctuated::Punctuated<FnArg, syn::Token![,]>)
             }
         }
     }
-    
+
     ReceiverBounds {
         needs_send: false,
         needs_sync: false,
@@ -389,5 +389,3 @@ fn add_self_sync_bound(sig: &mut Signature) {
         .predicates
         .push(sync_bound);
 }
-
-
